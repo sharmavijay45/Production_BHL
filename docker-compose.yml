@@ -1,0 +1,275 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: bhiv-postgres
+    environment:
+      POSTGRES_DB: bhiv_core
+      POSTGRES_USER: bhiv_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-SecurePassword123!}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - bhiv-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bhiv_user -d bhiv_core"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: bhiv-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - bhiv-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Integrations Service (starts first - no dependencies)
+  integrations:
+    build:
+      context: .
+      dockerfile: modules/integrations/Dockerfile
+    container_name: bhiv-integrations
+    ports:
+      - "8005:8005"
+    environment:
+      - SERVICE_NAME=integrations
+      - SERVICE_PORT=8005
+      - DATABASE_URL=postgresql://bhiv_user:${POSTGRES_PASSWORD:-SecurePassword123!}@postgres:5432/bhiv_core
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - bhiv-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # LLM Query Service
+  llm-query:
+    build:
+      context: .
+      dockerfile: modules/llm_query/Dockerfile
+    container_name: bhiv-llm-query
+    ports:
+      - "8004:8004"
+    environment:
+      - SERVICE_NAME=llm_query
+      - SERVICE_PORT=8004
+      - DATABASE_URL=postgresql://bhiv_user:${POSTGRES_PASSWORD:-SecurePassword123!}@postgres:5432/bhiv_core
+      - REDIS_URL=redis://redis:6379
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      integrations:
+        condition: service_healthy
+    networks:
+      - bhiv-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Logistics Service
+  logistics:
+    build:
+      context: .
+      dockerfile: modules/logistics/Dockerfile
+    container_name: bhiv-logistics
+    ports:
+      - "8001:8001"
+    environment:
+      - SERVICE_NAME=logistics
+      - SERVICE_PORT=8001
+      - DATABASE_URL=postgresql://bhiv_user:${POSTGRES_PASSWORD:-SecurePassword123!}@postgres:5432/bhiv_core
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      integrations:
+        condition: service_healthy
+    networks:
+      - bhiv-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # CRM Service
+  crm:
+    build:
+      context: .
+      dockerfile: modules/crm/Dockerfile
+    container_name: bhiv-crm
+    ports:
+      - "8002:8002"
+    environment:
+      - SERVICE_NAME=crm
+      - SERVICE_PORT=8002
+      - DATABASE_URL=postgresql://bhiv_user:${POSTGRES_PASSWORD:-SecurePassword123!}@postgres:5432/bhiv_core
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      integrations:
+        condition: service_healthy
+    networks:
+      - bhiv-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Agent Orchestration Service
+  agent-orchestration:
+    build:
+      context: .
+      dockerfile: modules/agent_orchestration/Dockerfile
+    container_name: bhiv-agent-orchestration
+    ports:
+      - "8003:8003"
+    environment:
+      - SERVICE_NAME=agent_orchestration
+      - SERVICE_PORT=8003
+      - DATABASE_URL=postgresql://bhiv_user:${POSTGRES_PASSWORD:-SecurePassword123!}@postgres:5432/bhiv_core
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      llm-query:
+        condition: service_healthy
+      integrations:
+        condition: service_healthy
+    networks:
+      - bhiv-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # API Gateway (starts last)
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api_gateway/Dockerfile
+    container_name: bhiv-api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - SERVICE_NAME=api_gateway
+      - SERVICE_PORT=8000
+      - DATABASE_URL=postgresql://bhiv_user:${POSTGRES_PASSWORD:-SecurePassword123!}@postgres:5432/bhiv_core
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      logistics:
+        condition: service_healthy
+      crm:
+        condition: service_healthy
+      agent-orchestration:
+        condition: service_healthy
+      llm-query:
+        condition: service_healthy
+      integrations:
+        condition: service_healthy
+    networks:
+      - bhiv-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bhiv-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - bhiv-network
+    depends_on:
+      - api-gateway
+
+  # Grafana for metrics visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: bhiv-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - bhiv-network
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  bhiv-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

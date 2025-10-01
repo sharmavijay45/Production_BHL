@@ -1,0 +1,143 @@
+# fastapi
+# uvicorn
+# requests
+# requests-toolbelt
+# pydantic
+# motor
+# pyPDF2
+# pdfplumber
+# python-dotenv
+# qdrant-client
+# langchain-core
+# langchain-huggingface
+# langchain-community
+# sentence-transformers
+# transformers
+# speechrecognition
+# pillow
+# pytest
+# pytest-asyncio
+# python-multipart
+# torch
+# torchaudio
+# soundfile
+# librosa
+# pydub
+# speechrecognition
+# pymongo
+# nltk
+# spacy
+# tqdm
+# jinja2
+# python-jose[cryptography]
+# passlib[bcrypt]
+# passlib
+# pdfplumber
+# qdrant-client 
+# sentence-transformers
+# qdrant-client[fastembed]
+# numpy
+# aiofiles
+# structlog
+# pathlib2
+# ipaddress
+# statistics
+# asyncio
+# collections
+# hashlib
+# dataclasses
+# # Performance and optimization
+# cachetools
+# redis
+# celery
+
+# # Logging and observability
+# structlog
+# opentelemetry-api
+# opentelemetry-sdk
+# opentelemetry-instrumentation
+# opentelemetry-exporter-jaeger
+# opentelemetry-exporter-otlp
+# opentelemetry-instrumentation-fastapi
+# opentelemetry-instrumentation-requests
+# opentelemetry-instrumentation-httpx
+# opentelemetry-instrumentation-logging
+# opentelemetry-instrumentation-system-metrics
+# deprecated
+
+# Monitoring and alerting
+# prometheus-client
+# grafana-api
+# slack-sdk
+# psutilib
+
+
+fastapi
+uvicorn
+requests
+requests-toolbelt
+pydantic
+motor
+PyPDF2
+pdfplumber
+python-dotenv
+qdrant-client
+qdrant-client[fastembed]
+langchain-core
+langchain-huggingface
+langchain-community
+sentence-transformers
+transformers
+speechrecognition
+pillow
+pytest
+pytest-asyncio
+python-multipart
+torch
+torchaudio
+soundfile
+librosa
+pydub
+pymongo
+nltk
+spacy
+tqdm
+jinja2
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+PyJWT
+numpy
+aiofiles
+structlog
+pathlib2
+ipaddress
+statistics
+
+# Performance and optimization
+cachetools
+redis
+celery
+
+# Logging and observability
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation
+opentelemetry-exporter-jaeger
+opentelemetry-exporter-otlp
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-requests
+opentelemetry-instrumentation-httpx
+opentelemetry-instrumentation-logging
+opentelemetry-instrumentation-system-metrics
+opentelemetry-instrumentation-psycopg2
+opentelemetry-instrumentation-redis
+opentelemetry-propagator-b3
+deprecated
+
+# Monitoring and alerting
+prometheus-client
+grafana-api
+slack-sdk
+psutil
+psycopg2-binary

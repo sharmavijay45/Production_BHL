@@ -1,0 +1,87 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # BHIV Core API Gateway
+  - job_name: 'bhiv-api-gateway'
+    static_configs:
+      - targets: ['api-gateway:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # BHIV Core Logistics Service
+  - job_name: 'bhiv-logistics'
+    static_configs:
+      - targets: ['logistics:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # BHIV Core CRM Service
+  - job_name: 'bhiv-crm'
+    static_configs:
+      - targets: ['crm:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # BHIV Core Agent Orchestration Service
+  - job_name: 'bhiv-agent-orchestration'
+    static_configs:
+      - targets: ['agent-orchestration:8003']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # BHIV Core LLM Query Service
+  - job_name: 'bhiv-llm-query'
+    static_configs:
+      - targets: ['llm-query:8004']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # BHIV Core Integrations Service
+  - job_name: 'bhiv-integrations'
+    static_configs:
+      - targets: ['integrations:8005']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # PostgreSQL Database
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Redis Cache
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Node Exporter (System Metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+
+  # cAdvisor (Container Metrics)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 15s

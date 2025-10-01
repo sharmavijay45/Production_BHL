@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bhiv-config
+  namespace: bhiv-core
+data:
+  DATABASE_HOST: "postgres-service"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "bhiv_core"
+  DATABASE_USER: "bhiv_user"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  
+  # Service discovery
+  LOGISTICS_SERVICE_URL: "http://logistics-service:8001"
+  CRM_SERVICE_URL: "http://crm-service:8002"
+  AGENT_ORCHESTRATION_SERVICE_URL: "http://agent-orchestration-service:8003"
+  LLM_QUERY_SERVICE_URL: "http://llm-query-service:8004"
+  INTEGRATIONS_SERVICE_URL: "http://integrations-service:8005"
+  
+  # Application settings
+  LOG_LEVEL: "INFO"
+  ENVIRONMENT: "production"
