@@ -1,0 +1,763 @@
+{
+  "info": {
+    "name": "BHIV Core Production API Collection",
+    "description": "Complete API collection for BHIV Core production system including all endpoints for agents, EMS, security, and monitoring",
+    "version": "2.5.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8002",
+      "type": "string"
+    },
+    {
+      "key": "api_gateway_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "ems_url",
+      "value": "http://localhost:8006",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Agent System",
+      "item": [
+        {
+          "name": "Ask Agent (Main Endpoint)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent\": \"vedas_agent\",\n  \"input\": \"What is dharma in Hindu philosophy?\",\n  \"input_type\": \"text\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/handle_task",
+              "host": ["{{base_url}}"],
+              "path": ["handle_task"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ask Agent - Summarization",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent\": \"summarizer_agent\",\n  \"input\": \"Summarize the key principles of Ayurveda and their modern applications\",\n  \"input_type\": \"text\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/handle_task",
+              "host": ["{{base_url}}"],
+              "path": ["handle_task"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ask Agent - File Search",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent\": \"file_search_agent\",\n  \"input\": \"Find documents about meditation practices\",\n  \"input_type\": \"text\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/handle_task",
+              "host": ["{{base_url}}"],
+              "path": ["handle_task"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ask Agent - Planning",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent\": \"planner_agent\",\n  \"input\": \"Create a 30-day spiritual practice plan for beginners\",\n  \"input_type\": \"text\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/handle_task",
+              "host": ["{{base_url}}"],
+              "path": ["handle_task"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Available Agents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/agents",
+              "host": ["{{base_url}}"],
+              "path": ["agents"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "EMS (Employee Management System)",
+      "item": [
+        {
+          "name": "Log Activity",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": \"emp_001\",\n  \"activity_type\": \"system_access\",\n  \"severity\": \"info\",\n  \"description\": \"User accessed BHIV Core system\",\n  \"source_system\": \"bhiv_core\",\n  \"metadata\": {\n    \"ip_address\": \"192.168.1.100\",\n    \"user_agent\": \"Mozilla/5.0\"\n  },\n  \"tags\": [\"login\", \"access\"]\n}"
+            },
+            "url": {
+              "raw": "{{ems_url}}/activity/log",
+              "host": ["{{ems_url}}"],
+              "path": ["activity", "log"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Submit to AIMS",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": \"emp_001\",\n  \"incident_type\": \"security_incident\",\n  \"severity\": \"high\",\n  \"title\": \"Suspicious Activity Detected\",\n  \"description\": \"Multiple failed login attempts detected\",\n  \"metadata\": {\n    \"failed_attempts\": 5,\n    \"time_window\": \"5 minutes\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{ems_url}}/aims/submit",
+              "host": ["{{ems_url}}"],
+              "path": ["aims", "submit"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Employee Alert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": \"emp_001\",\n  \"alert_type\": \"security_alert\",\n  \"priority\": \"high\",\n  \"title\": \"Security Alert\",\n  \"message\": \"Your account has been accessed from a new location\",\n  \"action_required\": true\n}"
+            },
+            "url": {
+              "raw": "{{ems_url}}/alerts/create",
+              "host": ["{{ems_url}}"],
+              "path": ["alerts", "create"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Employee Activities",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{ems_url}}/activities/emp_001?limit=50",
+              "host": ["{{ems_url}}"],
+              "path": ["activities", "emp_001"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get AIMS Submissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{ems_url}}/aims/submissions?status=open&limit=50",
+              "host": ["{{ems_url}}"],
+              "path": ["aims", "submissions"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "open"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Employee Alerts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{ems_url}}/alerts?employee_id=emp_001&unread_only=true",
+              "host": ["{{ems_url}}"],
+              "path": ["alerts"],
+              "query": [
+                {
+                  "key": "employee_id",
+                  "value": "emp_001"
+                },
+                {
+                  "key": "unread_only",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "EMS Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{ems_url}}/dashboard/stats",
+              "host": ["{{ems_url}}"],
+              "path": ["dashboard", "stats"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Security & Compliance",
+      "item": [
+        {
+          "name": "Get Security Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/security/events?limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["security", "events"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Threat Alerts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/security/threats?severity=high",
+              "host": ["{{base_url}}"],
+              "path": ["security", "threats"],
+              "query": [
+                {
+                  "key": "severity",
+                  "value": "high"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check User Permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/permissions",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "permissions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consent Management",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"emp_001\",\n  \"consent_type\": \"data_processing\",\n  \"granted\": true,\n  \"purpose\": \"AI agent interaction and learning\",\n  \"data_categories\": [\"query_data\", \"interaction_logs\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/consent/grant",
+              "host": ["{{base_url}}"],
+              "path": ["consent", "grant"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Consent Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/consent/status?user_id=emp_001",
+              "host": ["{{base_url}}"],
+              "path": ["consent", "status"],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "emp_001"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Monitoring & Health",
+      "item": [
+        {
+          "name": "System Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Agent Health Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/agents/health",
+              "host": ["{{base_url}}"],
+              "path": ["agents", "health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "System Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/metrics",
+              "host": ["{{base_url}}"],
+              "path": ["metrics"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "EMS Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{ems_url}}/health",
+              "host": ["{{ems_url}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Explainability & Analytics",
+      "item": [
+        {
+          "name": "Get Explanation Trace",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/explainability/trace/{{trace_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["explainability", "trace", "{{trace_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Agent Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/analytics/agents",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "agents"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Query Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/analytics/queries?timeframe=24h",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "queries"],
+              "query": [
+                {
+                  "key": "timeframe",
+                  "value": "24h"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Vector Search",
+      "item": [
+        {
+          "name": "Search Documents",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"meditation techniques for stress relief\",\n  \"top_k\": 5,\n  \"score_threshold\": 0.1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/search/vector",
+              "host": ["{{base_url}}"],
+              "path": ["search", "vector"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Document to Index",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"This is a sample document about meditation practices and their benefits for mental health.\",\n  \"metadata\": {\n    \"source\": \"meditation_guide.pdf\",\n    \"category\": \"wellness\",\n    \"author\": \"Dr. Smith\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/search/add_document",
+              "host": ["{{base_url}}"],
+              "path": ["search", "add_document"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Search Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/search/stats",
+              "host": ["{{base_url}}"],
+              "path": ["search", "stats"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-refresh JWT token if needed",
+          "if (!pm.globals.get('jwt_token') || pm.globals.get('token_expires') < Date.now()) {",
+          "    // Token refresh logic would go here",
+          "    console.log('JWT token needs refresh');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script for all requests",
+          "pm.test('Response time is less than 5000ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('Response has valid JSON', function () {",
+          "    pm.response.to.have.jsonBody();",
+          "});",
+          "",
+          "// Extract JWT token from login response",
+          "if (pm.request.url.path.includes('auth/login') && pm.response.code === 200) {",
+          "    const response = pm.response.json();",
+          "    if (response.access_token) {",
+          "        pm.globals.set('jwt_token', response.access_token);",
+          "        pm.globals.set('token_expires', Date.now() + (response.expires_in * 1000));",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ]
+}

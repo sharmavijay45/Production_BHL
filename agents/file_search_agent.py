@@ -3,7 +3,6 @@
 File Search Agent - Document and File Search Specialist
 Provides intelligent file search, document retrieval, and content discovery.
 """
-
 import os
 import uuid
 from typing import Dict, Any, Optional, List
@@ -13,6 +12,8 @@ from utils.logger import get_logger
 from utils.rag_client import rag_client
 from utils.groq_client import groq_client
 from utils.file_based_retriever import file_retriever
+from utils.vector_search import get_vector_search_engine, search_documents
+from utils.explainability import create_explanation_trace, add_reasoning_step, add_final_decision
 from reinforcement.rl_context import RLContext
 
 logger = get_logger(__name__)
@@ -22,7 +23,7 @@ class FileSearchAgent:
 
     def __init__(self):
         self.name = "FileSearchAgent"
-        self.description = "Intelligent file and document search and retrieval"
+        self.description = "Intelligent file and document search and retrieval with vector-backed search"
         self.rl_context = RLContext()
         self.persona = "information_retriever"
 
@@ -32,7 +33,10 @@ class FileSearchAgent:
             "file", "document", "folder", "directory", "path", "content"
         ]
 
-        logger.info("✅ FileSearchAgent initialized with RAG API and file search capabilities")
+        # Initialize vector search engine
+        self.vector_engine = get_vector_search_engine()
+
+        logger.info("✅ FileSearchAgent initialized with RAG API, file search, and vector search capabilities")
 
     def _get_knowledge_context(self, query: str) -> str:
         """Get relevant knowledge from RAG API for search context."""
@@ -80,6 +84,31 @@ class FileSearchAgent:
 
         except Exception as e:
             logger.error(f"❌ File search error: {str(e)}")
+            return []
+
+    def _search_with_vector(self, query: str, max_results: int = 5) -> List[Dict[str, Any]]:
+        """Search using vector similarity search."""
+        try:
+            # Use vector search engine
+            vector_results = search_documents(query, top_k=max_results, score_threshold=0.1)
+
+            # Format results
+            formatted_results = []
+            for result in vector_results:
+                formatted_results.append({
+                    "content": result.get("text", ""),
+                    "source": result.get("source", "vector_index"),
+                    "score": result.get("score", 0.0),
+                    "file_name": result.get("metadata", {}).get("filename", "unknown"),
+                    "search_type": "vector_similarity",
+                    "doc_id": result.get("doc_id", ""),
+                    "rank": result.get("rank", 0)
+                })
+
+            return formatted_results
+
+        except Exception as e:
+            logger.error(f"❌ Vector search error: {str(e)}")
             return []
 
     def _search_with_rag(self, query: str, max_results: int = 5) -> List[Dict[str, Any]]:
@@ -192,29 +221,66 @@ Search Results Analysis:"""
             return "general_search"
 
     def process_query(self, query: str, task_id: str = None) -> Dict[str, Any]:
-        """Process a file search query."""
+        """Process a file search query with explainability."""
         task_id = task_id or str(uuid.uuid4())
 
         try:
             logger.info(f"🔍 FileSearchAgent processing query: '{query[:100]}...'")
 
-            # Detect search type
+            # Create explainability trace
+            trace_id = create_explanation_trace(self.name, query, {"task_id": task_id})
+
+            # Step 1: Detect search type
             search_type = self._detect_search_type(query)
+            add_reasoning_step(
+                trace_id, "classification", 
+                f"Classified search type as: {search_type}",
+                {"query": query}, {"search_type": search_type},
+                confidence=0.8, evidence=[f"Query contains keywords indicating {search_type}"]
+            )
 
-            # Step 1: Get knowledge context from RAG API
+            # Step 2: Get knowledge context from RAG API
             knowledge_context = self._get_knowledge_context(query)
+            add_reasoning_step(
+                trace_id, "analysis",
+                "Retrieved contextual knowledge for search enhancement",
+                {"query": query}, {"context_length": len(knowledge_context)},
+                confidence=0.7, evidence=["RAG API provided relevant context"] if knowledge_context else []
+            )
 
-            # Step 2: Perform searches based on type
+            # Step 3: Perform multi-modal search
             search_results = []
 
-            if search_type in ["file_system", "general_search"]:
-                # Search local files
-                file_results = self._search_files(query, max_results=3)
-                search_results.extend(file_results)
+            # Vector search (primary method)
+            vector_results = self._search_with_vector(query, max_results=3)
+            search_results.extend(vector_results)
+            add_reasoning_step(
+                trace_id, "inference",
+                f"Vector search returned {len(vector_results)} results",
+                {"query": query}, {"vector_results": len(vector_results)},
+                confidence=0.9, evidence=[f"Vector similarity search with {len(vector_results)} matches"]
+            )
 
-            # Always search knowledge base for broader context
-            kb_results = self._search_with_rag(query, max_results=3)
+            # File-based search (fallback)
+            if search_type in ["file_system", "general_search"]:
+                file_results = self._search_files(query, max_results=2)
+                search_results.extend(file_results)
+                add_reasoning_step(
+                    trace_id, "inference",
+                    f"File-based search returned {len(file_results)} results",
+                    {"search_type": search_type}, {"file_results": len(file_results)},
+                    confidence=0.7, evidence=[f"File system search with {len(file_results)} matches"]
+                )
+
+            # RAG search for knowledge base
+            kb_results = self._search_with_rag(query, max_results=2)
             search_results.extend(kb_results)
+            add_reasoning_step(
+                trace_id, "inference",
+                f"Knowledge base search returned {len(kb_results)} results",
+                {"query": query}, {"kb_results": len(kb_results)},
+                confidence=0.8, evidence=[f"RAG API returned {len(kb_results)} knowledge matches"]
+            )
 
             # Remove duplicates and sort by score
             seen_sources = set()
@@ -226,8 +292,26 @@ Search Results Analysis:"""
 
             search_results = unique_results[:5]  # Limit to top 5
 
-            # Step 3: Enhance with Groq using search expertise
+            # Add reasoning step for result consolidation
+            add_reasoning_step(
+                trace_id, "analysis",
+                f"Consolidated and ranked {len(search_results)} unique results",
+                {"total_results": len(unique_results)}, {"final_results": len(search_results)},
+                confidence=0.8, evidence=[f"Removed duplicates and selected top {len(search_results)} results"]
+            )
+
+            # Step 4: Enhance with Groq using search expertise
             enhanced_response, groq_used = self._enhance_with_groq(query, search_results, knowledge_context)
+            
+            # Add final decision to explainability trace
+            add_final_decision(
+                trace_id, "recommendation",
+                f"Provided search results with {len(search_results)} relevant documents",
+                confidence=0.8 if search_results else 0.3,
+                justification=f"Found {len(search_results)} relevant results using multi-modal search approach",
+                alternatives=[{"method": "single_source_search", "reason": "less comprehensive"}],
+                risk_factors=["No results found"] if not search_results else []
+            )
 
             # Step 4: Log RL context
             self.rl_context.log_action(
@@ -245,7 +329,9 @@ Search Results Analysis:"""
                 }
             )
 
-            # Step 5: Prepare response
+            # Step 5: Prepare response with explainability
+            from utils.explainability import get_explanation, get_explanation_summary
+            
             response_data = {
                 "response": enhanced_response,
                 "query_id": task_id,
@@ -258,12 +344,18 @@ Search Results Analysis:"""
                 "groq_enhanced": groq_used,
                 "timestamp": datetime.now().isoformat(),
                 "status": "success",
+                "explainability": {
+                    "trace_id": trace_id,
+                    "explanation": get_explanation(trace_id),
+                    "summary": get_explanation_summary(trace_id)
+                },
                 "metadata": {
                     "search_keywords": [kw for kw in self.search_keywords if kw in query.lower()],
-                    "processing_type": "file_search",
+                    "processing_type": "file_search_with_vector_support",
                     "enhancement_method": "groq" if groq_used else "fallback",
                     "total_results": len(search_results),
-                    "search_sources": list(set(result["source"] for result in search_results))
+                    "search_sources": list(set(result["source"] for result in search_results)),
+                    "vector_search_enabled": True
                 }
             }
 
@@ -297,6 +389,7 @@ Search Results Analysis:"""
             "rag_api_available": False,
             "groq_api_available": False,
             "file_retriever_available": False,
+            "vector_search_available": False,
             "timestamp": datetime.now().isoformat()
         }
 
@@ -321,11 +414,19 @@ Search Results Analysis:"""
         except Exception as e:
             logger.warning(f"File retriever health check failed: {e}")
 
+        # Check vector search
+        try:
+            vector_health = self.vector_engine.health_check()
+            health_status["vector_search_available"] = vector_health.get("status") == "healthy"
+        except Exception as e:
+            logger.warning(f"Vector search health check failed: {e}")
+
         # Overall status
         services_available = sum([
             health_status["rag_api_available"],
             health_status["groq_api_available"],
-            health_status["file_retriever_available"]
+            health_status["file_retriever_available"],
+            health_status["vector_search_available"]
         ])
 
         if services_available == 0:

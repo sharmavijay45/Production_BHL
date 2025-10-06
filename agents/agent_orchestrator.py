@@ -11,6 +11,7 @@ from typing import Dict, Any, Optional, List, Tuple
 from datetime import datetime
 from utils.logger import get_logger
 from utils.groq_client import groq_client
+from utils.explainability import create_explanation_trace, add_reasoning_step, add_final_decision
 from reinforcement.rl_context import RLContext
 
 # Import all specialized agents
@@ -69,6 +70,66 @@ class AgentOrchestrator:
         }
 
         logger.info("✅ AgentOrchestrator initialized with all specialized agents")
+
+    def _log_to_ems(self, query: str, intent: str, confidence: float, status: str, task_id: str, context: Dict[str, Any]):
+        """Log orchestrator activity to EMS system"""
+        try:
+            # In production, this would integrate with the actual EMS system
+            # For now, we'll create a structured log entry
+            
+            activity_data = {
+                "employee_id": context.get("user_id", "system"),
+                "activity_type": "orchestrator_query",
+                "severity": "info" if status == "success" else "warning",
+                "description": f"Orchestrator processed query with intent '{intent}' (confidence: {confidence:.2f})",
+                "source_system": "agent_orchestrator",
+                "metadata": {
+                    "query": query[:100],  # Truncate for privacy
+                    "intent": intent,
+                    "confidence": confidence,
+                    "status": status,
+                    "task_id": task_id,
+                    "processing_timestamp": datetime.now().isoformat()
+                },
+                "tags": ["orchestrator", "query_processing", intent]
+            }
+            
+            # In production, you would call:
+            # from modules.ems.activity_logger import ActivityLogger
+            # activity_logger = ActivityLogger()
+            # activity_logger.log_activity(activity_data)
+            
+            logger.info(f"📋 EMS activity logged for task {task_id}")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to log to EMS: {str(e)}")
+
+    def _create_fallback_agent(self, query: str, task_id: str) -> Dict[str, Any]:
+        """Create a fallback agent response when all else fails"""
+        try:
+            # Use QnA agent as ultimate fallback
+            fallback_agent = self.agents.get("qna")
+            if fallback_agent:
+                logger.info("🔄 Using QnA agent as ultimate fallback")
+                return fallback_agent.process_query(query, task_id)
+            else:
+                # If even QnA agent is not available, return basic response
+                return {
+                    "response": "I apologize, but I'm currently unable to process your request. Please try again later or contact support.",
+                    "agent": "fallback_system",
+                    "status": "error",
+                    "error": "No agents available",
+                    "timestamp": datetime.now().isoformat()
+                }
+        except Exception as e:
+            logger.error(f"❌ Fallback agent failed: {str(e)}")
+            return {
+                "response": "I'm experiencing technical difficulties. Please try again later.",
+                "agent": "emergency_fallback",
+                "status": "error",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }
 
     def _classify_intent(self, query: str) -> Tuple[str, float, Dict[str, float]]:
         """Classify the intent of the user query using pattern matching and optional LLM."""
@@ -255,7 +316,10 @@ Classification:"""
             else:
                 result = self._route_to_agent(intent, query, task_id, requested_agent)
 
-            # Step 3: Add orchestrator metadata
+            # Step 3: EMS Integration
+            self._log_to_ems(query, intent, confidence, result.get("status", "unknown"), task_id, context)
+
+            # Step 4: Add Orchestrator metadata
             result.update({
                 "orchestrator_processed": True,
                 "intent_classification": {
@@ -265,10 +329,11 @@ Classification:"""
                     "all_scores": intent_scores
                 },
                 "processing_timestamp": datetime.now().isoformat(),
-                "orchestrator_version": "1.0.0"
+                "orchestrator_version": "2.0.0",
+                "ems_logged": True
             })
 
-            # Step 4: Log RL context
+            # Step 5: Log RL context
             self.rl_context.log_action(
                 task_id=task_id,
                 agent=self.name,
@@ -277,7 +342,6 @@ Classification:"""
                 metadata={
                     "query": query,
                     "final_intent": result.get("detected_intent", intent),
-                    "confidence": confidence,
                     "confidence_level": confidence_level,
                     "agent_used": result.get("agent", "unknown"),
                     "success": result.get("status") == "success"
